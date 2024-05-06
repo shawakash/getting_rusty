@@ -1,14 +1,40 @@
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use serde_json::json;
 use std::io::Result;
+use std::time::{Duration, SystemTime};
+
+mod config;
+mod routes;
+mod types;
+use crate::routes::binance::binance;
+use crate::types::utils::ResponseStatus;
+
+static START_TIME: SystemTime = SystemTime::UNIX_EPOCH;
 
 #[get("/")]
-async fn hello() -> impl Responder {
-    HttpResponse::Ok().body("Hello world!")
+async fn main_handler() -> impl Responder {
+    let uptime = SystemTime::now()
+        .duration_since(START_TIME)
+        .expect("Time went backwards")
+        .as_secs();
+    HttpResponse::Ok().json(json!({
+        "uptime": uptime,
+        "message": "Server is healthy!",
+        "status": ResponseStatus::Ok.as_str()
+    }))
 }
 
-#[post("/echo")]
-async fn echo(req_body: String) -> impl Responder {
-    HttpResponse::Ok().body(req_body)
+#[get("/_health")]
+async fn health() -> impl Responder {
+    let uptime = SystemTime::now()
+        .duration_since(START_TIME)
+        .expect("Time went backwards")
+        .as_secs();
+    HttpResponse::Ok().json(json!({
+        "uptime": uptime,
+        "message": "Server is healthy!",
+        "status": ResponseStatus::Ok.as_str()
+    }))
 }
 
 async fn manual_hello() -> impl Responder {
@@ -17,15 +43,19 @@ async fn manual_hello() -> impl Responder {
 
 #[actix_web::main]
 async fn main() -> Result<()> {
-    println!("Server running on port: 8080");
+    dotenv::dotenv().ok();
+
+    let port = config::server_port();
+    println!("Server running on port: {}", port);
 
     HttpServer::new(|| {
-        App::new()
-            .service(hello)
-            .service(echo)
-            .route("/hey", web::get().to(manual_hello))
+        App::new().service(main_handler).service(health).service(
+            web::scope("/app")
+                .route("/binance", web::get().to(binance))
+                .route("/hey", web::get().to(manual_hello)),
+        )
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind(("127.0.0.1", port))?
     .run()
     .await
 }
