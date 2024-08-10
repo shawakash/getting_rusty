@@ -1,19 +1,33 @@
 use rand::Rng;
 use std::cmp::Ordering;
-use std::{io, process};
+use std::fmt::Debug;
+use std::str::FromStr;
+use std::{any::type_name, io, process};
+
+pub fn cin<T: FromStr>() -> T
+where
+    T::Err: Debug,
+{
+    let mut input = String::new();
+
+    io::stdin()
+        .read_line(&mut input)
+        .expect("Failed to read line");
+
+    input.trim().parse::<T>().expect(&format!(
+        "Failed to parse input, Expected Type: {}",
+        type_name::<T>()
+    ))
+}
+
 fn main() {
     println!("Guess the number!");
     let secret_number = rand::thread_rng().gen_range(-100..=100);
     loop {
         println!("\nTake a guess!");
-        let mut guess = String::new();
-        io::stdin()
-            .read_line(&mut guess)
-            .expect("You must have entered a string");
-        let guess = match guess.trim().parse::<i32>() {
-            Ok(num) => num,
-            Err(_) => continue,
-        };
+
+        let guess = cin::<i32>();
+
         match guess.cmp(&secret_number) {
             Ordering::Less => println!("Too small"),
             Ordering::Greater => println!("Too big"),
@@ -22,14 +36,11 @@ fn main() {
                 process::exit(0);
             }
         }
+
         println!("\nWant to continue: (y/n)");
-        let mut do_continue = String::new();
-        io::stdin()
-            .read_line(&mut do_continue)
-            .expect("You must have entered a string");
-        if do_continue.trim() != "y" || do_continue.trim() != "Y" {
+        let do_continue = cin::<String>();
+        if do_continue.trim().to_lowercase() != "y" {
             break;
         }
     }
 }
-
