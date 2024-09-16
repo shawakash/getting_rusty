@@ -1,46 +1,39 @@
-use rand::Rng;
-use std::cmp::Ordering;
-use std::fmt::Debug;
-use std::str::FromStr;
-use std::{any::type_name, io, process};
+use std::collections::HashSet;
+use std::io;
+use std::io::{stdout, BufWriter, Write};
 
-pub fn cin<T: FromStr>() -> T
-where
-    T::Err: Debug,
-{
-    let mut input = String::new();
+#[derive(Default)]
+struct Reader {
+    buffer: Vec<String>,
+}
 
-    io::stdin()
-        .read_line(&mut input)
-        .expect("Failed to read line");
+impl Reader {
+    fn next<T: std::str::FromStr>(&mut self) -> T {
+        loop {
+            if let Some(token) = self.buffer.pop() {
+                return token.parse().ok().expect("Failed to parse!");
+            }
 
-    input.trim().parse::<T>().expect(&format!(
-        "Failed to parse input, Expected Type: {}",
-        type_name::<T>()
-    ))
+            let mut input = String::new();
+            io::stdin().read_line(&mut input).expect("Failed to read!");
+
+            self.buffer = input.split_whitespace().rev().map(String::from).collect();
+        }
+    }
 }
 
 fn main() {
-    println!("Guess the number!");
-    let secret_number = rand::thread_rng().gen_range(-100..=100);
-    loop {
-        println!("\nTake a guess!");
+    let mut reader = Reader::default();
+    let writer = &mut BufWriter::new(stdout());
 
-        let guess = cin::<i32>();
+    let is_multi_test: bool = false;
+    let mut t: i32 = 1;
 
-        match guess.cmp(&secret_number) {
-            Ordering::Less => println!("Too small"),
-            Ordering::Greater => println!("Too big"),
-            Ordering::Equal => {
-                println!("Bingo!");
-                process::exit(0);
-            }
-        }
+    if is_multi_test {
+        t = reader.next();
+    }
 
-        println!("\nWant to continue: (y/n)");
-        let do_continue = cin::<String>();
-        if do_continue.trim().to_lowercase() != "y" {
-            break;
-        }
+    for _ in 0..t {
+        //solve the problem here
     }
 }
